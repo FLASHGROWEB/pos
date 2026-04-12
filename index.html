@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SHOP POS | PRO</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <style>
+        body { background-color: #000; color: #fff; font-family: sans-serif; -webkit-tap-highlight-color: transparent; }
+        .view { display: none; height: calc(100vh - 80px); overflow: hidden; }
+        .view.active { display: flex; }
+        .num-btn { background: #111; border: 1px solid #222; height: 60px; border-radius: 12px; font-size: 1.5rem; font-weight: 600; display: flex; align-items: center; justify-content: center; }
+        .num-btn:active { background: #333; }
+        .nav-item { flex: 1; text-align: center; padding: 12px 0; color: #444; font-size: 0.65rem; font-weight: bold; }
+        .nav-item.active { color: #3b82f6; }
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 100; align-items: center; justify-content: center; padding: 20px; }
+        input { background: #111; border: 1px solid #333; color: #fff; padding: 12px; border-radius: 10px; width: 100%; font-size: 16px; }
+        #auth-overlay { position: fixed; inset: 0; z-index: 999; background: #000; display: flex; align-items: center; justify-content: center; padding: 20px; }
+    </style>
+</head>
+<body class="h-screen flex flex-col">
+
+    <div id="auth-overlay">
+        <div class="w-full max-w-xs text-center">
+            <h1 class="text-3xl font-black italic mb-2">SHOP <span class="text-blue-500">POS</span></h1>
+            
+            <div id="auth-login">
+                <p class="text-zinc-500 text-[10px] uppercase tracking-widest mb-6">Sign In</p>
+                <input type="email" id="login_email" placeholder="Email Address" class="mb-3 text-center">
+                <button onclick="sendOTP('login')" id="login_btn" class="w-full bg-blue-600 py-4 rounded-xl font-bold mb-4">Send Access Code</button>
+                <button onclick="toggleAuthMode('signup')" class="text-zinc-500 text-xs">New user? <span class="text-blue-500">Sign Up</span></button>
+            </div>
+
+            <div id="auth-signup" class="hidden">
+                <p class="text-zinc-500 text-[10px] uppercase tracking-widest mb-6">Create Account</p>
+                <input type="email" id="signup_email" placeholder="New Email Address" class="mb-3 text-center">
+                <button onclick="sendOTP('signup')" id="signup_btn" class="w-full bg-emerald-600 py-4 rounded-xl font-bold mb-4">Register & Send Code</button>
+                <button onclick="toggleAuthMode('login')" class="text-zinc-500 text-xs">Back to <span class="text-blue-500">Login</span></button>
+            </div>
+
+            <div id="auth-verify" class="hidden">
+                <p class="text-blue-400 text-xs mb-4 italic">Verify Code</p>
+                <input type="text" id="verify_input" placeholder="000000" class="mb-4 text-center tracking-[8px] text-2xl font-bold">
+                <div class="flex items-center justify-center gap-2 mb-6">
+                    <input type="checkbox" id="remember_me" class="w-4 h-4">
+                    <label for="remember_me" class="text-xs text-zinc-400">Remember me for 24h</label>
+                </div>
+                <button onclick="verifyAndUnlock()" class="w-full bg-white text-black py-4 rounded-xl font-black">UNLOCK</button>
+            </div>
+        </div>
+    </div>
+
+    <header class="p-4 flex justify-between items-center border-b border-zinc-900 bg-black">
+        <h1 class="text-xl font-black italic">SHOP <span class="text-blue-500">POS</span></h1>
+        <div id="drawer-stat" class="text-[10px] text-zinc-500 font-mono">DRAWER: $0.00</div>
+    </header>
+
+    <div class="flex-1 flex overflow-hidden">
+        <div class="flex-1 flex flex-col relative">
+            <div id="view-numpad" class="view active flex-col justify-center items-center p-6">
+                <div id="num-display" class="text-6xl font-mono font-bold text-blue-500 mb-8">$0.00</div>
+                <div class="grid grid-cols-3 gap-2 w-full max-w-[280px]">
+                    <button onclick="press('1')" class="num-btn">1</button>
+                    <button onclick="press('2')" class="num-btn">2</button>
+                    <button onclick="press('3')" class="num-btn">3</button>
+                    <button onclick="press('4')" class="num-btn">4</button>
+                    <button onclick="press('5')" class="num-btn">5</button>
+                    <button onclick="press('6')" class="num-btn">6</button>
+                    <button onclick="press('7')" class="num-btn">7</button>
+                    <button onclick="press('8')" class="num-btn">8</button>
+                    <button onclick="press('9')" class="num-btn">9</button>
+                    <button onclick="press('C')" class="num-btn text-red-500 text-xs">CLR</button>
+                    <button onclick="press('0')" class="num-btn">0</button>
+                    <button onclick="addToCartFromNum()" class="num-btn text-blue-500">ADD</button>
+                </div>
+            </div>
+
+            <div id="view-catalog" class="view flex-col p-4 overflow-y-auto">
+                <div id="product-grid" class="grid grid-cols-2 gap-3"></div>
+            </div>
+
+            <div id="view-history" class="view flex-col p-6 overflow-y-auto">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-lg font-bold">Sales History</h2>
+                    <button onclick="clearHistory()" class="text-red-500 text-[10px] font-bold">RESET ALL</button>
+                </div>
+                <div id="history-list" class="space-y-3"></div>
+            </div>
+
+            <div id="view-products" class="view flex-col p-6">
+                <h2 class="text-lg font-bold mb-4">Inventory</h2>
+                <input id="p-name" type="text" placeholder="Item Name" class="mb-2">
+                <input id="p-price" type="number" step="0.01" placeholder="0.00" class="mb-4">
+                <button onclick="saveProduct()" class="bg-blue-600 py-3 rounded-xl font-bold mb-6">Add Item</button>
+                <div id="manage-list" class="space-y-2 overflow-y-auto"></div>
+            </div>
+
+            <div id="view-settings" class="view flex-col p-6">
+                <h2 class="text-lg font-bold mb-4">Settings</h2>
+                <label class="text-[10px] text-zinc-500 font-bold mb-1 block">INTERAC EMAIL</label>
+                <input id="config-email" type="email" placeholder="your@email.com" class="mb-4">
+                <button onclick="saveSettings()" class="bg-zinc-800 py-3 rounded-xl font-bold mb-8">Save Config</button>
+                <button onclick="logout()" class="mt-auto text-zinc-500 text-xs">Log Out / Switch Account</button>
+            </div>
+        </div>
+
+        <div id="cart-sidebar" class="w-[300px] bg-zinc-950 flex flex-col p-4 border-l border-zinc-900">
+            <span class="text-[10px] font-bold text-zinc-600 uppercase mb-4">Active Cart</span>
+            <div id="cart-items" class="flex-1 overflow-y-auto space-y-2 mb-4"></div>
+            <div class="pt-4 border-t border-zinc-900">
+                <span id="cart-total" class="text-3xl font-black text-blue-500 block mb-4">$0.00</span>
+                <button onclick="openPayment()" class="w-full bg-blue-600 py-4 rounded-xl font-bold">CHECKOUT</button>
+            </div>
+        </div>
+    </div>
+
+    <nav class="h-20 bg-black border-t border-zinc-900 flex items-center">
+        <div onclick="showView('numpad')" id="nav-numpad" class="nav-item active">NUM</div>
+        <div onclick="showView('catalog')" id="nav-catalog" class="nav-item">TILES</div>
+        <div onclick="showView('history')" id="nav-history" class="nav-item">LOG</div>
+        <div onclick="showView('products')" id="nav-products" class="nav-item">ITEM</div>
+        <div onclick="showView('settings')" id="nav-settings" class="nav-item">SET</div>
+    </nav>
+
+    <div id="pay-modal" class="modal"><div class="bg-zinc-900 p-8 rounded-3xl w-full max-w-xs text-center border border-zinc-800"><h2 class="font-bold mb-6">Payment</h2><button onclick="handleSale('Cash')" class="w-full bg-zinc-800 py-4 rounded-xl font-bold mb-3">💵 CASH</button><button onclick="handleInterac()" class="w-full bg-blue-600 py-4 rounded-xl font-bold">📲 INTERAC</button><button onclick="closeModal()" class="block w-full mt-4 text-zinc-500 text-xs">CANCEL</button></div></div>
+    <div id="qr-modal" class="modal"><div class="bg-white p-6 rounded-3xl w-full max-w-xs text-center text-black"><div id="qrcode" class="flex justify-center mb-4"></div><div id="qr-amt" class="text-2xl font-black mb-6"></div><button onclick="handleSale('Interac')" class="w-full bg-black text-white py-4 rounded-xl font-bold">DONE</button></div></div>
+
+    <script>
+        // --- DATA & AUTH ---
+        let generatedOTP = null;
+        let users = JSON.parse(localStorage.getItem('shop_users') || '{}');
+        let currentUser = null;
+        
+        (function() { emailjs.init("g0rN57iiMkcVPLrE-"); })();
+
+        function toggleAuthMode(mode) {
+            document.getElementById('auth-login').classList.toggle('hidden', mode !== 'login');
+            document.getElementById('auth-signup').classList.toggle('hidden', mode !== 'signup');
+        }
+
+        function sendOTP(type) {
+            const email = document.getElementById(type + '_email').value;
+            const btn = document.getElementById(type + '_btn');
+            
+            if (type === 'login' && !users[email]) return alert("Account not found. Sign up first!");
+            if (type === 'signup' && users[email]) return alert("Email already registered!");
+            if (!email) return alert("Enter email!");
+
+            generatedOTP = Math.floor(100000 + Math.random() * 900000);
+            btn.disabled = true; btn.innerText = "Sending...";
+            currentUser = email;
+
+            emailjs.send('service_v3vjmow', 'template_givpfut', { to_email: email, otp_code: generatedOTP })
+                .then(() => {
+                    document.getElementById('auth-login').classList.add('hidden');
+                    document.getElementById('auth-signup').classList.add('hidden');
+                    document.getElementById('auth-verify').classList.remove('hidden');
+                }).catch(() => { alert("Error sending code."); btn.disabled = false; });
+        }
+
+        function verifyAndUnlock() {
+            if (document.getElementById('verify_input').value == generatedOTP) {
+                if (!users[currentUser]) users[currentUser] = { products: [], sales: [], email: "" };
+                localStorage.setItem('shop_users', JSON.stringify(users));
+                
+                if (document.getElementById('remember_me').checked) {
+                    localStorage.setItem('pos_session', JSON.stringify({ user: currentUser, expiry: Date.now() + 86400000 }));
+                }
+                
+                document.getElementById('auth-overlay').style.display = 'none';
+                loadUserData();
+            } else { alert("Invalid code."); }
+        }
+
+        // --- POS CORE ---
+        let state = { input: "", cart: [], products: [], sales: [], interacEmail: "", drawer: 0 };
+
+        function loadUserData() {
+            const data = users[currentUser] || { products: [], sales: [], email: "", drawer: 0 };
+            state.products = data.products || [];
+            state.sales = data.sales || [];
+            state.interacEmail = data.email || "";
+            state.drawer = data.drawer || 0;
+            document.getElementById('config-email').value = state.interacEmail;
+            updateDrawer();
+            renderCart();
+        }
+
+        function saveData() {
+            users[currentUser] = { products: state.products, sales: state.sales, email: state.interacEmail, drawer: state.drawer };
+            localStorage.setItem('shop_users', JSON.stringify(users));
+        }
+
+        function press(n) {
+            if (n === 'C') state.input = ""; else if (state.input.length < 7) state.input += n;
+            const v = state.input === "" ? 0 : parseInt(state.input);
+            document.getElementById('num-display').innerText = `$${(v/100).toFixed(2)}`;
+        }
+
+        function addToCartFromNum() {
+            const v = parseInt(state.input) || 0;
+            if (v > 0) { state.cart.push({ id: Date.now(), name: "Custom", price: v/100 }); state.input = ""; press('C'); renderCart(); }
+        }
+
+        function renderCart() {
+            const list = document.getElementById('cart-items');
+            let total = 0;
+            list.innerHTML = state.cart.map(i => {
+                total += i.price;
+                return `<div class="flex justify-between p-2 bg-zinc-900 rounded-lg text-xs border border-zinc-800"><span>${i.name}</span><span class="text-blue-500 font-bold">$${i.price.toFixed(2)}</span></div>`;
+            }).join('');
+            document.getElementById('cart-total').innerText = `$${total.toFixed(2)}`;
+        }
+
+        function showView(v) {
+            document.querySelectorAll('.view, .nav-item').forEach(el => el.classList.remove('active'));
+            document.getElementById('view-'+v).classList.add('active');
+            document.getElementById('nav-'+v).classList.add('active');
+            if (v === 'catalog') renderCatalog();
+            if (v === 'history') renderHistory();
+            if (v === 'products') renderProductList();
+        }
+
+        function renderHistory() {
+            const list = document.getElementById('history-list');
+            list.innerHTML = state.sales.length ? state.sales.map(s => `
+                <div class="bg-zinc-900 p-4 rounded-xl border border-zinc-800 flex justify-between items-center">
+                    <div><div class="text-[9px] text-zinc-500 uppercase font-bold">${s.time} • ${s.method}</div><div class="text-xl font-bold text-blue-400">$${s.amt.toFixed(2)}</div></div>
+                </div>`).join('') : '<div class="text-center text-zinc-600 py-10">No sales yet today.</div>';
+        }
+
+        function handleSale(method) {
+            const total = state.cart.reduce((s, i) => s + i.price, 0);
+            state.sales.unshift({ id: Date.now(), amt: total, method, time: new Date().toLocaleTimeString() });
+            if (method === 'Cash') state.drawer += total;
+            state.cart = [];
+            renderCart(); closeModal(); updateDrawer(); saveData();
+            if (method === 'Interac') alert("Sale Complete");
+        }
+
+        function handleInterac() {
+            if (!state.interacEmail) return alert("Set email in Settings");
+            const total = state.cart.reduce((s, i) => s + i.price, 0).toFixed(2);
+            document.getElementById('pay-modal').style.display = 'none';
+            document.getElementById('qr-modal').style.display = 'flex';
+            document.getElementById('qr-amt').innerText = `$${total}`;
+            const q = document.getElementById('qrcode'); q.innerHTML = "";
+            new QRCode(q, { text: `mailto:${state.interacEmail}?subject=POS&body=$${total}`, width: 160, height: 160 });
+        }
+
+        function saveProduct() {
+            const n = document.getElementById('p-name').value, p = parseFloat(document.getElementById('p-price').value);
+            if (n && p) { state.products.push({ id: Date.now(), name: n, price: p }); saveData(); renderProductList(); }
+        }
+
+        function renderCatalog() {
+            document.getElementById('product-grid').innerHTML = state.products.map(p => `
+                <div onclick='state.cart.push({...${JSON.stringify(p)}, id: Date.now()}); renderCart();' class="product-card">
+                    <span class="text-[9px] font-bold text-zinc-500">${p.name}</span><span class="text-xl font-bold text-blue-500">$${p.price.toFixed(2)}</span>
+                </div>`).join('');
+        }
+
+        function renderProductList() {
+            document.getElementById('manage-list').innerHTML = state.products.map(p => `
+                <div class="flex justify-between p-3 bg-zinc-900 rounded-lg text-xs mb-2"><span>${p.name}</span><button onclick="state.products = state.products.filter(x=>x.id!==${p.id}); saveData(); renderProductList();" class="text-red-500">DEL</button></div>`).join('');
+        }
+
+        function clearHistory() { if(confirm("Clear all sales history?")) { state.sales = []; state.drawer = 0; saveData(); renderHistory(); updateDrawer(); }}
+        function updateDrawer() { document.getElementById('drawer-stat').innerText = `DRAWER: $${state.drawer.toFixed(2)}`; }
+        function saveSettings() { state.interacEmail = document.getElementById('config-email').value; saveData(); alert("Saved"); }
+        function openPayment() { if(state.cart.length) document.getElementById('pay-modal').style.display = 'flex'; }
+        function closeModal() { document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); }
+        function logout() { localStorage.removeItem('pos_session'); location.reload(); }
+
+        // Session Check
+        const session = JSON.parse(localStorage.getItem('pos_session'));
+        if (session && session.expiry > Date.now()) {
+            currentUser = session.user;
+            document.getElementById('auth-overlay').style.display = 'none';
+            loadUserData();
+        } 
+    </script>
+</body>
+</html>
