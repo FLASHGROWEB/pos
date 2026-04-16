@@ -7,8 +7,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
-        body { background-color: #000; color: #fff; font-family: sans-serif; }
-        .payment-box { background: #0a0a0a; border: 1px solid #222; border-radius: 32px; padding: 2rem; width: 100%; max-width: 400px; }
+        body { background-color: #000; color: #fff; font-family: sans-serif; -webkit-tap-highlight-color: transparent; }
+        .payment-box { background: #0a0a0a; border: 1px solid #222; border-radius: 32px; padding: 2.5rem 2rem; width: 100%; max-width: 400px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); }
         #error-screen { display: none; position: fixed; inset: 0; background: #000; z-index: 100; align-items: center; justify-content: center; text-align: center; padding: 20px; }
     </style>
 </head>
@@ -17,112 +17,101 @@
     <div id="error-screen">
         <div class="max-w-xs">
             <h1 class="text-red-500 font-black italic text-2xl mb-2">ACCESS DENIED</h1>
-            <p id="error-msg" class="text-zinc-500 text-xs uppercase tracking-widest mb-4">Verification Failed</p>
-            <p id="debug-info" class="text-[8px] text-zinc-800 font-mono break-all"></p>
+            <p id="error-msg" class="text-zinc-500 text-[10px] uppercase tracking-widest">Invalid Session</p>
         </div>
     </div>
 
     <div id="main-ui" class="payment-box text-center hidden">
-        <h1 class="text-xl font-black italic mb-6">SHOPS <span class="text-blue-500">PAY</span></h1>
+        <h1 class="text-xl font-black italic mb-8">SHOPS <span class="text-blue-500">PAY</span></h1>
         
-        <div class="mb-8">
-            <p class="text-zinc-500 text-[10px] uppercase tracking-[3px] mb-1">Total Amount</p>
-            <div id="display-amt" class="text-5xl font-mono font-bold text-white">$0.00</div>
+        <div class="mb-10">
+            <p class="text-zinc-500 text-[10px] uppercase tracking-[3px] mb-2 font-bold">Total Amount</p>
+            <div id="display-amt" class="text-6xl font-mono font-bold text-white">$0.00</div>
         </div>
 
-        <div class="bg-white p-4 rounded-2xl inline-block mb-6">
+        <div class="bg-white p-5 rounded-3xl inline-block mb-8 shadow-inner">
             <div id="qrcode"></div>
         </div>
 
-        <div class="bg-zinc-900/50 p-4 rounded-xl border border-zinc-800 mb-6">
+        <div class="bg-zinc-900/50 p-4 rounded-2xl border border-zinc-800 mb-8">
             <p class="text-zinc-500 text-[10px] uppercase font-bold mb-1">Required Memo</p>
-            <div id="transaction-id" class="text-xl font-mono text-blue-400 font-bold tracking-widest">-----</div>
+            <div id="transaction-id" class="text-2xl font-mono text-blue-400 font-black tracking-widest">-----</div>
         </div>
 
-        <p class="text-[11px] text-zinc-400 mb-6">
-            Send Interac to: <br>
-            <span id="display-email" class="text-white font-bold">...</span>
+        <p class="text-[11px] text-zinc-500 mb-8 leading-relaxed">
+            Send Interac e-Transfer to: <br>
+            <span id="display-email" class="text-white font-bold text-sm">...</span>
         </p>
 
-        <button onclick="finishPayment()" class="w-full py-4 rounded-xl bg-blue-600 text-white font-black text-sm uppercase tracking-widest mb-3">Complete Payment</button>
-        <button onclick="window.close()" class="w-full py-3 rounded-xl bg-zinc-900 text-zinc-500 font-bold text-[10px] uppercase tracking-widest">Cancel</button>
+        <button onclick="finishPayment()" class="w-full py-5 rounded-2xl bg-blue-600 text-white font-black text-sm uppercase tracking-widest mb-4 shadow-lg shadow-blue-600/20 active:scale-95 transition-transform">Complete Payment</button>
+        <button onclick="window.close()" class="w-full py-3 rounded-xl bg-zinc-950 text-zinc-600 font-bold text-[10px] uppercase tracking-widest hover:text-red-500 transition-colors">Cancel</button>
     </div>
 
     <script>
-        const API_POOL = "https://raw.githubusercontent.com/FLASHGROWEB/pos/refs/heads/main/whitelist.txt"; 
-        let redirectTarget = "";
+        // --- BUILT-IN WHITELIST ---
+        const WHITELIST = [
+            {
+                url: "flashgroweb.github.io/postest",
+                email: "jadenwilliamstv@gmail.com",
+                redirect: "https://flashgroweb.github.io"
+            },
+            {
+                url: "localhost",
+                email: "test@example.com",
+                redirect: "https://google.com"
+            }
+        ];
 
-        async function initCheckout() {
+        let activeConfig = null;
+
+        function cleanURL(url) {
+            return url.replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/$/, '').toLowerCase().trim();
+        }
+
+        function init() {
             const params = new URLSearchParams(window.location.search);
             const amount = params.get('amt');
 
             if (!amount) {
-                showError("Missing Amount Parameter");
+                showError("No Amount Provided");
                 return;
             }
 
-            try {
-                const response = await fetch(API_POOL);
-                const text = await response.text();
-                const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            // Detect where the request is coming from
+            let caller = cleanURL(document.referrer || window.location.href);
 
-                // IDENTIFY CALLER
-                // When on GitHub Pages, we need the username.github.io/repo-name part usually
-                let rawRef = document.referrer || window.location.href;
-                let refUrl = new URL(rawRef);
-                
-                // Construct the "Match String" (e.g., "user.github.io/shop")
-                let hostPath = refUrl.hostname + refUrl.pathname;
-                if (hostPath.endsWith('/')) hostPath = hostPath.slice(0, -1);
-                
-                document.getElementById('debug-info').innerText = "Trying to match: " + hostPath;
+            // Find the match in the internal list
+            activeConfig = WHITELIST.find(item => caller.includes(cleanURL(item.url)));
 
-                // FIND MATCH
-                let match = lines.find(line => {
-                    let configEntry = line.split(',')[0].trim();
-                    // Match if entry is exactly hostPath, OR if entry is just the hostname
-                    return hostPath === configEntry || refUrl.hostname === configEntry || hostPath === "OFF_" + configEntry;
+            if (activeConfig) {
+                // Generate UI
+                document.getElementById('display-amt').innerText = `$${parseFloat(amount).toFixed(2)}`;
+                document.getElementById('display-email').innerText = activeConfig.email;
+                
+                // Generate Unique Transaction Code
+                const txId = "LS-" + Math.random().toString(36).substr(2, 5).toUpperCase();
+                document.getElementById('transaction-id').innerText = txId;
+
+                // Create QR Code
+                const qrBox = document.getElementById("qrcode");
+                qrBox.innerHTML = "";
+                new QRCode(qrBox, {
+                    text: `mailto:${activeConfig.email}?subject=Payment ${txId}&body=Amount: $${amount}%0D%0AMemo: ${txId}`,
+                    width: 180,
+                    height: 180
                 });
 
-                if (match) {
-                    const parts = match.split(',');
-                    const configKey = parts[0].trim();
-                    const email = parts[1].trim();
-                    redirectTarget = parts[2] ? parts[2].trim() : null;
-
-                    if (configKey.startsWith("OFF_")) {
-                        showError("This store is currently offline.");
-                        return;
-                    }
-
-                    // Success
-                    document.getElementById('display-amt').innerText = `$${parseFloat(amount).toFixed(2)}`;
-                    document.getElementById('display-email').innerText = email;
-                    document.getElementById('main-ui').classList.remove('hidden');
-                    
-                    const txId = "LS-" + Math.random().toString(36).substr(2, 5).toUpperCase();
-                    document.getElementById('transaction-id').innerText = txId;
-
-                    const qrBox = document.getElementById("qrcode");
-                    qrBox.innerHTML = "";
-                    new QRCode(qrBox, {
-                        text: `mailto:${email}?subject=Payment ${txId}&body=Amount: $${amount}`,
-                        width: 160, height: 160
-                    });
-
-                } else {
-                    showError("Domain not in whitelist");
-                }
-            } catch (e) {
-                showError("Whitelisting Error");
+                document.getElementById('main-ui').classList.remove('hidden');
+            } else {
+                showError("Unauthorized Domain");
             }
         }
 
         function finishPayment() {
-            if (redirectTarget) {
-                window.top.location.href = redirectTarget;
+            if (activeConfig && activeConfig.redirect) {
+                window.location.href = activeConfig.redirect;
             } else {
-                alert("Payment recorded. You can close this tab.");
+                alert("Payment Confirmed. Closing Window.");
                 window.close();
             }
         }
@@ -132,7 +121,7 @@
             document.getElementById('error-msg').innerText = msg;
         }
 
-        initCheckout();
+        init();
     </script>
 </body>
 </html>
