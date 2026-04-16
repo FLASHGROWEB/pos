@@ -11,7 +11,7 @@
         .payment-box { background: #0a0a0a; border: 1px solid #222; border-radius: 32px; padding: 2.5rem 2rem; width: 100%; max-width: 400px; }
         .method-btn { border: 1px solid #222; padding: 12px; border-radius: 14px; font-size: 10px; font-weight: 800; letter-spacing: 1px; transition: 0.2s; color: #555; }
         .method-btn.active { background: #3b82f6; border-color: #3b82f6; color: white; }
-        #status-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 200; align-items: center; justify-content: center; text-align: center; backdrop-filter: blur(8px); }
+        #status-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.98); z-index: 200; align-items: center; justify-content: center; text-align: center; backdrop-filter: blur(10px); }
         .spinner { width: 40px; height: 40px; border: 4px solid #111; border-top: 4px solid #3b82f6; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 20px; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         #error-screen { display: none; position: fixed; inset: 0; background: #000; z-index: 300; align-items: center; justify-content: center; text-align: center; }
@@ -22,21 +22,21 @@
     <div id="status-overlay">
         <div class="p-8">
             <div id="status-loader" class="spinner"></div>
-            <h2 id="status-title" class="text-xl font-bold mb-2 uppercase italic tracking-tighter text-blue-500">Verifying</h2>
-            <p id="status-text" class="text-zinc-500 text-[10px] uppercase tracking-[3px] leading-relaxed max-w-[200px] mx-auto">Connecting to Network...</p>
-            <button id="close-status" onclick="hideStatus()" class="hidden mt-10 px-6 py-2 border border-zinc-800 rounded-full text-zinc-500 font-bold text-[10px] uppercase tracking-widest hover:text-white transition-colors">Go Back</button>
+            <h2 id="status-title" class="text-xl font-bold mb-2 uppercase italic text-blue-500 tracking-tighter">Verifying</h2>
+            <p id="status-text" class="text-zinc-500 text-[10px] uppercase tracking-[3px] leading-relaxed max-w-[220px] mx-auto">Connecting to Network...</p>
+            <button id="close-status" onclick="hideStatus()" class="hidden mt-10 px-6 py-2 border border-zinc-800 rounded-full text-zinc-500 font-bold text-[10px] uppercase tracking-widest">Go Back</button>
         </div>
     </div>
 
     <div id="error-screen">
         <div class="max-w-xs px-10">
             <h1 class="text-red-500 font-black italic text-2xl mb-2">ACCESS DENIED</h1>
-            <p id="error-msg" class="text-zinc-500 text-[10px] uppercase tracking-widest leading-loose">Invalid Session or Unauthorized Domain</p>
+            <p id="error-msg" class="text-zinc-500 text-[10px] uppercase tracking-widest">Invalid Session</p>
         </div>
     </div>
 
-    <div id="main-ui" class="payment-box text-center hidden scale-up">
-        <h1 class="text-xl font-black italic mb-6 tracking-tighter">SHOPS <span class="text-blue-500">PAY</span></h1>
+    <div id="main-ui" class="payment-box text-center hidden">
+        <h1 class="text-xl font-black italic mb-6 tracking-tighter uppercase">SHOPS <span class="text-blue-500">PAY</span></h1>
         
         <div id="method-selector" class="flex gap-2 mb-8 hidden">
             <button id="btn-interac" onclick="setMethod('interac')" class="method-btn flex-1 active">INTERAC</button>
@@ -53,37 +53,33 @@
         </div>
 
         <div id="interac-details" class="space-y-4">
-            <div class="bg-zinc-900/50 p-4 rounded-2xl border border-zinc-800">
+            <div class="bg-zinc-900/50 p-4 rounded-2xl border border-zinc-800 text-center">
                 <p class="text-zinc-500 text-[10px] uppercase font-bold mb-1 tracking-widest">Required Memo</p>
                 <div id="transaction-id" class="text-2xl font-mono text-blue-400 font-black tracking-widest">-----</div>
             </div>
-            <p class="text-[10px] text-zinc-500 leading-relaxed uppercase tracking-tighter">
-                Send Interac e-Transfer to:<br>
-                <span id="display-email" class="text-white font-bold">...</span>
-            </p>
+            <p class="text-[10px] text-zinc-500 uppercase tracking-tighter">Send e-Transfer to: <span id="display-email" class="text-white font-bold text-sm">...</span></p>
         </div>
 
         <div id="crypto-details" class="hidden space-y-4">
             <div class="bg-zinc-900/50 p-4 rounded-2xl border border-zinc-800">
-                <p class="text-zinc-500 text-[10px] uppercase font-bold mb-1 tracking-widest" id="crypto-label">CRYPTO ADDRESS</p>
+                <p class="text-zinc-500 text-[10px] uppercase font-bold mb-1 tracking-widest" id="crypto-label">BTC Address</p>
                 <div id="display-crypto" class="text-[10px] font-mono text-blue-400 break-all px-4 py-1 leading-normal">...</div>
             </div>
-            <p class="text-[10px] text-zinc-500 italic">Please send only <span id="coin-name">the specified coin</span> to this address.</p>
+            <p class="text-[10px] text-zinc-500 italic">Blockchain verification checks for the exact amount after you click complete.</p>
         </div>
 
-        <button onclick="handleCompletion()" class="w-full py-5 mt-10 rounded-2xl bg-blue-600 text-white font-black text-sm uppercase tracking-widest shadow-lg shadow-blue-600/30 active:scale-95 transition-transform">Complete Payment</button>
-        <button onclick="window.close()" class="w-full py-3 mt-4 text-zinc-700 font-bold text-[10px] uppercase tracking-widest hover:text-red-500 transition-colors">Cancel Payment</button>
+        <button onclick="handleCompletion()" class="w-full py-5 mt-10 rounded-2xl bg-blue-600 text-white font-black text-sm uppercase tracking-widest shadow-lg active:scale-95 transition-transform">Complete Payment</button>
+        <button onclick="window.close()" class="w-full py-3 mt-4 text-zinc-700 font-bold text-[10px] uppercase tracking-widest hover:text-red-500">Cancel Payment</button>
     </div>
 
     <script>
-        // --- BUILT-IN WHITELIST ---
         const WHITELIST = [
             {
                 url: "flashgroweb.github.io/postest",
-                mode: "hybrid", // Options: "interac", "crypto", "hybrid"
+                mode: "hybrid",
                 email: "jadenwilliamstv@gmail.com",
-                cryptoType: "LTC", // Options: "BTC" or "LTC"
-                cryptoAddr: "ltc1qg2hwndxygxcss2gcnr6fzg6lxda8jg4z2qvvwf", 
+                cryptoType: "LTC", 
+                cryptoAddr: "LX6m8Bv9yPqW...YOUR_LTC_ADDRESS", 
                 redirect: "https://flashgroweb.github.io"
             }
         ];
@@ -93,18 +89,14 @@
         let currentMethod = 'interac';
         let txId = "";
 
-        function cleanURL(url) { 
-            return url.replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/$/, '').toLowerCase().trim(); 
-        }
+        function clean(u) { return u.replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/$/, '').toLowerCase().trim(); }
 
         function init() {
-            const params = new URLSearchParams(window.location.search);
-            currentAmount = params.get('amt') || "0.00";
-            if (currentAmount === "0.00") { showError("Amount is missing"); return; }
-
-            let caller = cleanURL(document.referrer || window.location.href);
-            activeConfig = WHITELIST.find(item => caller.includes(cleanURL(item.url)));
-
+            const p = new URLSearchParams(window.location.search);
+            currentAmount = p.get('amt') || "0.00";
+            if (currentAmount === "0.00") { showError("Missing Amount"); return; }
+            let c = clean(document.referrer || window.location.href);
+            activeConfig = WHITELIST.find(i => c.includes(clean(i.url)));
             if (activeConfig) {
                 document.getElementById('display-amt').innerText = `$${parseFloat(currentAmount).toFixed(2)}`;
                 txId = "LS-" + Math.random().toString(36).substr(2, 5).toUpperCase();
@@ -112,99 +104,92 @@
                 document.getElementById('display-email').innerText = activeConfig.email;
                 document.getElementById('display-crypto').innerText = activeConfig.cryptoAddr;
                 document.getElementById('crypto-label').innerText = activeConfig.cryptoType + " Address";
-                document.getElementById('coin-name').innerText = activeConfig.cryptoType;
-                
-                if (activeConfig.mode === "hybrid") {
-                    document.getElementById('method-selector').classList.remove('hidden');
-                    document.getElementById('btn-crypto').innerText = activeConfig.cryptoType;
-                }
-                
+                if (activeConfig.mode === "hybrid") document.getElementById('method-selector').classList.remove('hidden');
                 setMethod(activeConfig.mode === "hybrid" ? 'interac' : activeConfig.mode);
                 document.getElementById('main-ui').classList.remove('hidden');
-            } else {
-                showError("Unauthorized Domain Connection");
-            }
+            } else { showError("Unauthorized Domain"); }
         }
 
-        function setMethod(method) {
-            currentMethod = method;
-            const qrBox = document.getElementById("qrcode");
-            qrBox.innerHTML = "";
-            document.getElementById('btn-interac').className = `method-btn flex-1 ${method === 'interac' ? 'active' : ''}`;
-            document.getElementById('btn-crypto').className = `method-btn flex-1 ${method === 'crypto' ? 'active' : ''}`;
-            
-            if (method === 'interac') {
+        function setMethod(m) {
+            currentMethod = m;
+            const q = document.getElementById("qrcode"); q.innerHTML = "";
+            document.getElementById('btn-interac').className = `method-btn flex-1 ${m === 'interac' ? 'active' : ''}`;
+            document.getElementById('btn-crypto').className = `method-btn flex-1 ${m === 'crypto' ? 'active' : ''}`;
+            if (m === 'interac') {
                 document.getElementById('interac-details').classList.remove('hidden');
                 document.getElementById('crypto-details').classList.add('hidden');
-                new QRCode(qrBox, { 
-                    text: `mailto:${activeConfig.email}?subject=Payment ${txId}&body=Amount: $${currentAmount}%0D%0AMemo: ${txId}`, 
-                    width: 180, height: 180, colorDark: "#000000", colorLight: "#ffffff"
-                });
+                new QRCode(q, { text: `mailto:${activeConfig.email}?subject=Pay ${txId}&body=Memo: ${txId}`, width: 180, height: 180 });
             } else {
                 document.getElementById('interac-details').classList.add('hidden');
                 document.getElementById('crypto-details').classList.remove('hidden');
-                new QRCode(qrBox, { 
-                    text: activeConfig.cryptoAddr, 
-                    width: 180, height: 180, colorDark: "#000000", colorLight: "#ffffff"
-                });
+                new QRCode(q, { text: activeConfig.cryptoAddr, width: 180, height: 180 });
             }
         }
 
         async function handleCompletion() {
             if (currentMethod === 'interac') {
-                showStatus("Verifying", "Please ensure you sent the e-Transfer with the correct memo.");
-                setTimeout(() => finishPayment(), 2500);
-            } else {
-                const coin = activeConfig.cryptoType.toUpperCase();
-                showStatus(`Scanning ${coin}...`, `Checking network for transactions to ${activeConfig.cryptoAddr.slice(0,8)}...`);
-                
-                let apiUrl = (coin === "BTC") 
+                showStatus("Verifying", "Please ensure your Interac memo matches: " + txId);
+                setTimeout(() => finishPayment(), 3000);
+                return;
+            }
+
+            const coin = activeConfig.cryptoType.toUpperCase();
+            showStatus(`Scanning ${coin}...`, `Calculating current rates for $${currentAmount}...`);
+
+            try {
+                // 1. Get Live Price
+                const priceRes = await fetch(`https://min-api.cryptocompare.com/data/price?fsym=${coin}&tsyms=CAD`);
+                const priceData = await priceRes.json();
+                const rate = priceData.CAD;
+                const expected = (parseFloat(currentAmount) / rate).toFixed(5);
+
+                showStatus(`Scanning ${coin}...`, `Searching for ~${expected} ${coin} to wallet...`);
+
+                // 2. Scan Blockchain
+                let api = (coin === "BTC") 
                     ? `https://blockchain.info/rawaddr/${activeConfig.cryptoAddr}`
-                    : `https://api.blockcypher.com/v1/ltc/main/addrs/${activeConfig.cryptoAddr}/full?limit=1`;
+                    : `https://api.blockcypher.com/v1/ltc/main/addrs/${activeConfig.cryptoAddr}/full?limit=5`;
 
-                try {
-                    const response = await fetch(apiUrl);
-                    const data = await response.json();
-                    let found = false;
+                const res = await fetch(api);
+                const data = await res.json();
+                let found = false;
 
-                    if (data.txs && data.txs.length > 0) {
-                        const txTime = new Date(data.txs[0].received || data.txs[0].time * 1000).getTime();
-                        if (Date.now() - txTime < 900000) found = true; // 15 min window
+                if (data.txs && data.txs.length > 0) {
+                    for (let tx of data.txs) {
+                        const txTime = new Date(tx.received || tx.time * 1000).getTime();
+                        const val = (tx.total / 100000000).toFixed(5);
+                        const diff = Math.abs(val - expected);
+                        
+                        // Check: Last 20 mins AND Amount is within 5% tolerance
+                        if ((Date.now() - txTime < 1200000) && (diff < expected * 0.05)) {
+                            found = true; break;
+                        }
                     }
-
-                    if (found) {
-                        showStatus("Detected!", `${coin} transfer found. Redirecting...`, true);
-                        setTimeout(() => finishPayment(), 3000);
-                    } else {
-                        showStatus("Not Found", "No recent transaction detected. Wait 60 seconds and try again.", false, true);
-                    }
-                } catch (e) {
-                    showStatus("Network Error", "Could not connect to blockchain. Try again.", false, true);
                 }
+
+                if (found) {
+                    showStatus("Payment Detected!", `${coin} transfer confirmed on network.`, true);
+                    setTimeout(() => finishPayment(), 3000);
+                } else {
+                    showStatus("Not Found", `We're looking for ~${expected} ${coin}. Ensure you've sent the funds before completing.`, false, true);
+                }
+            } catch (e) {
+                showStatus("Sync Error", "Blockchain network is busy. Try again.", false, true);
             }
         }
 
-        function showStatus(title, text, success = false, showButton = false) {
+        function showStatus(t, x, s = false, b = false) {
             document.getElementById('status-overlay').style.display = 'flex';
-            document.getElementById('status-title').innerText = title;
-            document.getElementById('status-text').innerText = text;
-            document.getElementById('status-loader').style.display = success ? 'none' : 'block';
-            if (showButton) document.getElementById('close-status').classList.remove('hidden');
-            else document.getElementById('close-status').classList.add('hidden');
+            document.getElementById('status-title').innerText = t;
+            document.getElementById('status-text').innerText = x;
+            document.getElementById('status-loader').style.display = s ? 'none' : 'block';
+            document.getElementById('close-status').className = b ? 'mt-10 px-6 py-2 border border-zinc-800 rounded-full text-zinc-500 font-bold text-[10px] uppercase block' : 'hidden';
         }
 
         function hideStatus() { document.getElementById('status-overlay').style.display = 'none'; }
-
-        function finishPayment() {
-            if (activeConfig && activeConfig.redirect) window.location.href = activeConfig.redirect;
-            else window.close();
-        }
-
-        function showError(msg) {
-            document.getElementById('error-screen').style.display = 'flex';
-            document.getElementById('error-msg').innerText = msg;
-        }
-
+        function finishPayment() { if (activeConfig.redirect) window.location.href = activeConfig.redirect; else window.close(); }
+        function showError(m) { document.getElementById('error-screen').style.display = 'flex'; document.getElementById('error-msg').innerText = m; }
+        
         init();
     </script>
 </body>
