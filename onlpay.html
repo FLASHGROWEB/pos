@@ -9,14 +9,17 @@
     <style>
         body { background-color: #000; color: #fff; font-family: sans-serif; }
         .payment-box { background: #0a0a0a; border: 1px solid #222; border-radius: 32px; padding: 2rem; width: 100%; max-width: 400px; }
-        #error-screen { display: none; position: fixed; inset: 0; background: #000; z-index: 100; align-items: center; justify-content: center; text-align: center; }
+        #error-screen { display: none; position: fixed; inset: 0; background: #000; z-index: 100; align-items: center; justify-content: center; text-align: center; padding: 20px; }
     </style>
 </head>
 <body class="h-screen flex items-center justify-center p-6">
 
-    <div id="error-screen" class="flex flex-col p-10">
-        <h1 class="text-red-500 font-black italic text-2xl mb-2">ACCESS DENIED</h1>
-        <p id="error-msg" class="text-zinc-500 text-xs uppercase tracking-widest">Invalid Session or Unauthorized Domain</p>
+    <div id="error-screen">
+        <div class="max-w-xs">
+            <h1 class="text-red-500 font-black italic text-2xl mb-2">ACCESS DENIED</h1>
+            <p id="error-msg" class="text-zinc-500 text-xs uppercase tracking-widest mb-4">Verification Failed</p>
+            <p id="debug-info" class="text-[8px] text-zinc-800 font-mono break-all"></p>
+        </div>
     </div>
 
     <div id="main-ui" class="payment-box text-center hidden">
@@ -32,7 +35,7 @@
         </div>
 
         <div class="bg-zinc-900/50 p-4 rounded-xl border border-zinc-800 mb-6">
-            <p class="text-zinc-500 text-[10px] uppercase font-bold mb-2">Required Memo</p>
+            <p class="text-zinc-500 text-[10px] uppercase font-bold mb-1">Required Memo</p>
             <div id="transaction-id" class="text-xl font-mono text-blue-400 font-bold tracking-widest">-----</div>
         </div>
 
@@ -41,79 +44,85 @@
             <span id="display-email" class="text-white font-bold">...</span>
         </p>
 
-        <button onclick="finishPayment()" class="w-full py-4 rounded-xl bg-blue-600 text-white font-black text-sm uppercase tracking-widest mb-3 shadow-lg shadow-blue-900/20">Complete Payment</button>
+        <button onclick="finishPayment()" class="w-full py-4 rounded-xl bg-blue-600 text-white font-black text-sm uppercase tracking-widest mb-3">Complete Payment</button>
         <button onclick="window.close()" class="w-full py-3 rounded-xl bg-zinc-900 text-zinc-500 font-bold text-[10px] uppercase tracking-widest">Cancel</button>
     </div>
 
     <script>
-        const API_POOL = "https://raw.githubusercontent.com/FLASHGROWEB/pos/refs/heads/main/whitelist.txt";
+        const API_POOL = "https://raw.githubusercontent.com/FLASHGROWEB/pos/refs/heads/main/whitelist.txt"; 
         let redirectTarget = "";
 
         async function initCheckout() {
             const params = new URLSearchParams(window.location.search);
             const amount = params.get('amt');
 
-            // 1. BLOCK if no amount is provided (preventing empty URL opening)
-            if (!amount || amount === "0.00") {
-                showError("No Amount Specified");
+            if (!amount) {
+                showError("Missing Amount Parameter");
                 return;
             }
 
             try {
                 const response = await fetch(API_POOL);
-                const data = await response.text();
-                const lines = data.split('\n');
+                const text = await response.text();
+                const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
 
-                // 2. Identify Domain + Path (handles /buzzfeed etc)
-                const ref = document.referrer ? new URL(document.referrer) : window.location;
-                const fullPath = ref.hostname + ref.pathname.replace(/\/$/, ""); 
+                // IDENTIFY CALLER
+                // When on GitHub Pages, we need the username.github.io/repo-name part usually
+                let rawRef = document.referrer || window.location.href;
+                let refUrl = new URL(rawRef);
+                
+                // Construct the "Match String" (e.g., "user.github.io/shop")
+                let hostPath = refUrl.hostname + refUrl.pathname;
+                if (hostPath.endsWith('/')) hostPath = hostPath.slice(0, -1);
+                
+                document.getElementById('debug-info').innerText = "Trying to match: " + hostPath;
 
-                // 3. Find Match (Strict check)
-                // We look for a line starting with the specific domain/path
-                const match = lines.find(l => {
-                    const domainPart = l.split(',')[0].trim();
-                    return fullPath.startsWith(domainPart) || domainPart.startsWith("OFF_") === false && ref.hostname === domainPart;
+                // FIND MATCH
+                let match = lines.find(line => {
+                    let configEntry = line.split(',')[0].trim();
+                    // Match if entry is exactly hostPath, OR if entry is just the hostname
+                    return hostPath === configEntry || refUrl.hostname === configEntry || hostPath === "OFF_" + configEntry;
                 });
 
                 if (match) {
                     const parts = match.split(',');
-                    const domain = parts[0].trim();
+                    const configKey = parts[0].trim();
                     const email = parts[1].trim();
                     redirectTarget = parts[2] ? parts[2].trim() : null;
 
-                    // Check for the "OFF_" switch
-                    if (domain.startsWith("OFF_")) {
-                        showError("Service Temporarily Offline");
+                    if (configKey.startsWith("OFF_")) {
+                        showError("This store is currently offline.");
                         return;
                     }
 
-                    // Success - Setup UI
+                    // Success
                     document.getElementById('display-amt').innerText = `$${parseFloat(amount).toFixed(2)}`;
                     document.getElementById('display-email').innerText = email;
                     document.getElementById('main-ui').classList.remove('hidden');
                     
-                    const txId = "LS-" + Math.random().toString(36).substr(2, 4).toUpperCase();
+                    const txId = "LS-" + Math.random().toString(36).substr(2, 5).toUpperCase();
                     document.getElementById('transaction-id').innerText = txId;
 
-                    new QRCode(document.getElementById("qrcode"), {
-                        text: `mailto:${email}?subject=Pay ${txId}&body=Amount: $${amount}`,
+                    const qrBox = document.getElementById("qrcode");
+                    qrBox.innerHTML = "";
+                    new QRCode(qrBox, {
+                        text: `mailto:${email}?subject=Payment ${txId}&body=Amount: $${amount}`,
                         width: 160, height: 160
                     });
 
                 } else {
-                    showError("Unauthorized Domain");
+                    showError("Domain not in whitelist");
                 }
             } catch (e) {
-                showError("System Connection Error");
+                showError("Whitelisting Error");
             }
         }
 
         function finishPayment() {
             if (redirectTarget) {
-                // Redirect to the "Thank You" page provided in whitelist
-                window.location.href = redirectTarget;
+                window.top.location.href = redirectTarget;
             } else {
-                alert("Payment complete! You can now close this window.");
+                alert("Payment recorded. You can close this tab.");
                 window.close();
             }
         }
