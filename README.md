@@ -1,1 +1,37 @@
-this is a POS system for Canadians who do not want to give their ID to random companies and just want to free and easy POS system for customer support or any issues contact 647-931-2843 
+/* * COPYRIGHT (C) 2026 SWIFT HOLDING - ALL RIGHTS RESERVED
+ * Unauthorized copying or distribution of this file is strictly prohibited.
+ * use requires a valid whitelist entry.
+
+ */              
+ 
+📜 SWIFT HOLDING | Commercial Software License
+Project: SHOPS PAY Gateway
+
+Owner: Swift Holding
+
+Version: 1.0 (2026)
+
+1. GRANT OF LICENSE
+This software and its source code are the intellectual property of Swift Holding. Permission is hereby granted to individuals or entities to view the source code for educational purposes.
+
+2. COMMERCIAL USE RESTRICTIONS
+Commercial use, redistribution, or "mirroring" of this software is strictly prohibited unless:
+
+The user has been officially added to the Swift Holding Authorization Whitelist.
+
+A valid service agreement or licensing fee has been established with the Owner.
+
+3. PROHIBITED ACTIONS
+You may not:
+
+Copy, modify, or distribute the source code to create a competing payment gateway.
+
+Bypass or attempt to bypass the domain-locking security features.
+
+Remove the "Powered by SHOPS PAY" or "Swift Holding" branding from the UI.
+
+4. TERMINATION
+Swift Holding reserves the right to terminate whitelist access immediately and without notice if these terms are violated.
+
+5. LIMITATION OF LIABILITY
+This software is provided "as is." Swift Holding is not responsible for any financial loss, network errors, or failed transactions resulting from the use of this gateway.
