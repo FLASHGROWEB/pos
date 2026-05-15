@@ -78,25 +78,25 @@
         const EMAILJS_SERVICE_ID = "service_vji7dpj";
         const EMAILJS_TEMPLATE_ID = "template_bb4s30u";
 
-        // Simplified Whitelist: Just the main domain parts
-        const WHITELIST = [
-            {
-                url: "flashgroweb.github.io", 
-                mode: "hybrid",
+        // Whitelist organized by ID
+        const WHITELIST = {
+            "1": {
+                name: "Flashgroweb Store",
                 email: "kashog20210@gmail.com",
                 cryptoType: "LTC",
                 cryptoAddr: "ltc1qg2hwndxygxcss2gcnr6fzg6lxda8jg4z2qvvwf",
-                redirect: "https://flashgroweb.github.io/pos/onlp"
+                redirect: "https://flashgroweb.github.io/pos/onlp",
+                mode: "hybrid"
             },
-            {
-                url: "jadenjvl.github.io",
-                mode: "hybrid",
+            "2": {
+                name: "Jaden JVL Store",
                 email: "jadenwilliamstv@gmail.com",
                 cryptoType: "LTC",
                 cryptoAddr: "ltc1qg2hwndxygxcss2gcnr6fzg6lxda8jg4z2qvvwf",
-                redirect: "https://jadenjvl.github.io/SHOPPOS/"
+                redirect: "https://jadenjvl.github.io/SHOPPOS/",
+                mode: "hybrid"
             }
-        ];
+        };
 
         let activeConfig = null;
         let currentAmount = "0.00";
@@ -105,23 +105,12 @@
 
         (function() { emailjs.init(EMAILJS_PUBLIC_KEY); })();
 
-        function clean(u) { 
-            if (!u) return "";
-            return u.replace(/^https?:\/\//, '').replace(/^www\./, '').toLowerCase().trim(); 
-        }
-
         function init() {
             const p = new URLSearchParams(window.location.search);
             currentAmount = p.get('amt') || "0.00";
+            const storeId = p.get('id'); // Get ID from link
             
-            let ref = clean(document.referrer);
-            let loc = clean(window.location.href);
-            
-            // Checks if the Whitelist URL is ANYWHERE inside the current address
-            activeConfig = WHITELIST.find(i => {
-                let cleanKey = i.url.toLowerCase();
-                return ref.includes(cleanKey) || loc.includes(cleanKey);
-            });
+            activeConfig = WHITELIST[storeId];
             
             if (activeConfig) {
                 document.getElementById('display-amt').innerText = `$${parseFloat(currentAmount).toFixed(2)}`;
@@ -140,8 +129,8 @@
                 document.getElementById('main-ui').classList.remove('hidden');
             } else {
                 document.body.innerHTML = `<div style='color:grey; text-align:center; padding:50px; font-family:sans-serif;'>
-                    <div style='font-weight:bold; margin-bottom:10px;'>Session Error: Unauthorized Origin</div>
-                    <div style='font-size:10px; color:#333;'>Check: ${loc}</div>
+                    <div style='font-weight:bold; margin-bottom:10px;'>Session Error: Invalid Store ID</div>
+                    <div style='font-size:10px; color:#333;'>Please ensure the payment link includes a valid ?id= parameter</div>
                 </div>`;
             }
         }
@@ -175,7 +164,8 @@
                 amount: currentAmount,
                 method: currentMethod.toUpperCase(),
                 txid: txId,
-                store_url: window.location.href
+                store_url: window.location.href,
+                store_name: activeConfig.name
             };
 
             emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, templateParams)
