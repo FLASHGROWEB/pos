@@ -74,29 +74,30 @@
     </div>
 
     <script>
-        // --- YOUR ACTIVE EMAILJS CREDENTIALS ---
+        // --- EMAILJS CONFIG ---
         const EMAILJS_PUBLIC_KEY = "g0rN57iiMkcVPLrE-"; 
         const EMAILJS_SERVICE_ID = "service_vji7dpj";
         const EMAILJS_TEMPLATE_ID = "template_bb4s30u";
 
         const WHITELIST = [
-    {
-        url: "flashgroweb.github.io/SHOPPOS",
-        mode: "hybrid",
-        email: "kashog20210@gmail.com",
-        cryptoType: "LTC",
-        cryptoAddr: "ltc1qg2hwndxygxcss2gcnr6fzg6lxda8jg4z2qvvwf",
-        redirect: "https://flashgroweb.github.io/SHOPPOS/"
-    }, // <--- THIS COMMA WAS MISSING
-    {
-        url: "jadenjvl.github.io/SHOPPOS",
-        mode: "hybrid",
-        email: "jadenwilliamstv@gmail.com",
-        cryptoType: "LTC",
-        cryptoAddr: "ltc1qg2hwndxygxcss2gcnr6fzg6lxda8jg4z2qvvwf",
-        redirect: "https://flashgroweb.github.io/SHOPPOS/"
-    }
-];
+            {
+                url: "flashgroweb.github.io/SHOPPOS",
+                mode: "hybrid",
+                email: "kashog20210@gmail.com",
+                cryptoType: "LTC",
+                cryptoAddr: "ltc1qg2hwndxygxcss2gcnr6fzg6lxda8jg4z2qvvwf",
+                redirect: "https://flashgroweb.github.io/SHOPPOS/"
+            },
+            {
+                url: "jadenjvl.github.io/SHOPPOS",
+                mode: "hybrid",
+                email: "jadenwilliamstv@gmail.com",
+                cryptoType: "LTC",
+                cryptoAddr: "ltc1qg2hwndxygxcss2gcnr6fzg6lxda8jg4z2qvvwf",
+                redirect: "https://flashgroweb.github.io/SHOPPOS/"
+            }
+        ];
+
         let activeConfig = null;
         let currentAmount = "0.00";
         let currentMethod = 'interac';
@@ -105,13 +106,23 @@
         // Start EmailJS
         (function() { emailjs.init(EMAILJS_PUBLIC_KEY); })();
 
-        function clean(u) { return u.replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/$/, '').toLowerCase().trim(); }
+        function clean(u) { 
+            if (!u) return "";
+            return u.replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/$/, '').toLowerCase().trim(); 
+        }
 
         function init() {
             const p = new URLSearchParams(window.location.search);
             currentAmount = p.get('amt') || "0.00";
-            let c = clean(document.referrer || window.location.href);
-            activeConfig = WHITELIST.find(i => c.includes(clean(i.url)));
+            
+            // Get both the referrer and the current URL for whitelist matching
+            let ref = clean(document.referrer);
+            let loc = clean(window.location.href);
+            
+            activeConfig = WHITELIST.find(i => {
+                let cleanWhitelistUrl = clean(i.url);
+                return ref.includes(cleanWhitelistUrl) || loc.includes(cleanWhitelistUrl);
+            });
             
             if (activeConfig) {
                 document.getElementById('display-amt').innerText = `$${parseFloat(currentAmount).toFixed(2)}`;
@@ -129,7 +140,10 @@
                 setMethod(activeConfig.mode === "hybrid" ? 'interac' : activeConfig.mode);
                 document.getElementById('main-ui').classList.remove('hidden');
             } else {
-                document.body.innerHTML = "<div style='color:grey; text-align:center; margin-top:50px;'>Session Error: Unauthorized Origin</div>";
+                document.body.innerHTML = `<div style='color:grey; text-align:center; padding:50px; font-family:sans-serif;'>
+                    <div style='font-weight:bold; margin-bottom:10px;'>Session Error: Unauthorized Origin</div>
+                    <div style='font-size:10px; color:#333;'>Detected: ${loc || "None"}</div>
+                </div>`;
             }
         }
 
@@ -142,12 +156,10 @@
             if (m === 'interac') {
                 document.getElementById('interac-details').classList.remove('hidden');
                 document.getElementById('crypto-details').classList.add('hidden');
-                // Standard Interac QR (mailto)
                 new QRCode(q, { text: `mailto:${activeConfig.email}?subject=Payment ${txId}&body=Memo: ${txId}`, width: 160, height: 160 });
             } else {
                 document.getElementById('interac-details').classList.add('hidden');
                 document.getElementById('crypto-details').classList.remove('hidden');
-                // Standard Crypto Address QR
                 new QRCode(q, { text: activeConfig.cryptoAddr, width: 160, height: 160 });
             }
         }
@@ -169,7 +181,6 @@
 
             emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, templateParams)
                 .then(() => {
-                    // Success: Wait 4 seconds to show the message then redirect
                     setTimeout(() => {
                         if (activeConfig.redirect) window.location.href = activeConfig.redirect;
                         else window.close();
