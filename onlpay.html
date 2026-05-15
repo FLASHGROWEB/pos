@@ -74,54 +74,53 @@
     </div>
 
     <script>
-        // --- EMAILJS CONFIG ---
         const EMAILJS_PUBLIC_KEY = "g0rN57iiMkcVPLrE-"; 
         const EMAILJS_SERVICE_ID = "service_vji7dpj";
         const EMAILJS_TEMPLATE_ID = "template_bb4s30u";
 
-       const WHITELIST = [
-    {
-        // This matches the "Detected" URL you saw on screen
-        url: "flashgroweb.github.io/pos/onlp", 
-        mode: "hybrid",
-        email: "kashog20210@gmail.com",
-        cryptoType: "LTC",
-        cryptoAddr: "ltc1qg2hwndxygxcss2gcnr6fzg6lxda8jg4z2qvvwf",
-        redirect: "https://flashgroweb.github.io/pos/onlp"
-    },
-    {
-        url: "jadenjvl.github.io/SHOPPOS",
-        mode: "hybrid",
-        email: "jadenwilliamstv@gmail.com",
-        cryptoType: "LTC",
-        cryptoAddr: "ltc1qg2hwndxygxcss2gcnr6fzg6lxda8jg4z2qvvwf",
-        redirect: "jadenjvl.github.io/SHOPPOS"
-    }
-];
+        // Simplified Whitelist: Just the main domain parts
+        const WHITELIST = [
+            {
+                url: "flashgroweb.github.io", 
+                mode: "hybrid",
+                email: "kashog20210@gmail.com",
+                cryptoType: "LTC",
+                cryptoAddr: "ltc1qg2hwndxygxcss2gcnr6fzg6lxda8jg4z2qvvwf",
+                redirect: "https://flashgroweb.github.io/pos/onlp"
+            },
+            {
+                url: "jadenjvl.github.io",
+                mode: "hybrid",
+                email: "jadenwilliamstv@gmail.com",
+                cryptoType: "LTC",
+                cryptoAddr: "ltc1qg2hwndxygxcss2gcnr6fzg6lxda8jg4z2qvvwf",
+                redirect: "https://jadenjvl.github.io/SHOPPOS/"
+            }
+        ];
+
         let activeConfig = null;
         let currentAmount = "0.00";
         let currentMethod = 'interac';
         let txId = "";
 
-        // Start EmailJS
         (function() { emailjs.init(EMAILJS_PUBLIC_KEY); })();
 
         function clean(u) { 
             if (!u) return "";
-            return u.replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/$/, '').toLowerCase().trim(); 
+            return u.replace(/^https?:\/\//, '').replace(/^www\./, '').toLowerCase().trim(); 
         }
 
         function init() {
             const p = new URLSearchParams(window.location.search);
             currentAmount = p.get('amt') || "0.00";
             
-            // Get both the referrer and the current URL for whitelist matching
             let ref = clean(document.referrer);
             let loc = clean(window.location.href);
             
+            // Checks if the Whitelist URL is ANYWHERE inside the current address
             activeConfig = WHITELIST.find(i => {
-                let cleanWhitelistUrl = clean(i.url);
-                return ref.includes(cleanWhitelistUrl) || loc.includes(cleanWhitelistUrl);
+                let cleanKey = i.url.toLowerCase();
+                return ref.includes(cleanKey) || loc.includes(cleanKey);
             });
             
             if (activeConfig) {
@@ -142,7 +141,7 @@
             } else {
                 document.body.innerHTML = `<div style='color:grey; text-align:center; padding:50px; font-family:sans-serif;'>
                     <div style='font-weight:bold; margin-bottom:10px;'>Session Error: Unauthorized Origin</div>
-                    <div style='font-size:10px; color:#333;'>Detected: ${loc || "None"}</div>
+                    <div style='font-size:10px; color:#333;'>Check: ${loc}</div>
                 </div>`;
             }
         }
@@ -187,7 +186,7 @@
                     }, 4000);
                 }, (error) => {
                     console.error("EmailJS Error:", error);
-                    alert("Submission failed. Please check your internet connection.");
+                    alert("Submission failed.");
                     document.getElementById('status-overlay').style.display = 'none';
                 });
         }
