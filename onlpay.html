@@ -80,25 +80,23 @@
         const EMAILJS_TEMPLATE_ID = "template_bb4s30u";
 
         const WHITELIST = [
-            {
-                url: "flashgroweb.github.io/SHOPPOS",
-                mode: "hybrid",
-                email: "kashog20210@gmail.com",
-                cryptoType: "LTC",
-                cryptoAddr: "ltc1qg2hwndxygxcss2gcnr6fzg6lxda8jg4z2qvvwf", // <--- UPDATE THIS
-                redirect: "https://flashgroweb.github.io/SHOPPOS/"
-            }
-
-            {
-                url: "jadenjvl.github.io/SHOPPOS",
-                mode: "hybrid",
-                email: "jadenwilliamstv@gmail.com",
-                cryptoType: "LTC",
-                cryptoAddr: "ltc1qg2hwndxygxcss2gcnr6fzg6lxda8jg4z2qvvwf", // <--- UPDATE THIS
-                redirect: "https://flashgroweb.github.io/SHOPPOS/"
-            }
-        ];
-
+    {
+        url: "flashgroweb.github.io/SHOPPOS",
+        mode: "hybrid",
+        email: "kashog20210@gmail.com",
+        cryptoType: "LTC",
+        cryptoAddr: "ltc1qg2hwndxygxcss2gcnr6fzg6lxda8jg4z2qvvwf",
+        redirect: "https://flashgroweb.github.io/SHOPPOS/"
+    }, // <--- THIS COMMA WAS MISSING
+    {
+        url: "jadenjvl.github.io/SHOPPOS",
+        mode: "hybrid",
+        email: "jadenwilliamstv@gmail.com",
+        cryptoType: "LTC",
+        cryptoAddr: "ltc1qg2hwndxygxcss2gcnr6fzg6lxda8jg4z2qvvwf",
+        redirect: "https://flashgroweb.github.io/SHOPPOS/"
+    }
+];
         let activeConfig = null;
         let currentAmount = "0.00";
         let currentMethod = 'interac';
