@@ -103,12 +103,16 @@
         let currentMethod = 'interac';
         let txId = "";
 
-        (function() { emailjs.init(EMAILJS_PUBLIC_KEY); })();
+        // Safe Initialization: Executed only when the DOM tree has completely formed
+        document.addEventListener("DOMContentLoaded", function() {
+            emailjs.init(EMAILJS_PUBLIC_KEY);
+            init();
+        });
 
         function init() {
             const p = new URLSearchParams(window.location.search);
             currentAmount = p.get('amt') || "0.00";
-            const storeId = p.get('id'); // Get ID from link
+            const storeId = p.get('id'); 
             
             activeConfig = WHITELIST[storeId];
             
@@ -168,20 +172,19 @@
                 store_name: activeConfig.name
             };
 
-            emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, templateParams)
+            // Added fourth parameter (EMAILJS_PUBLIC_KEY) for authentication context validation
+            emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, templateParams, EMAILJS_PUBLIC_KEY)
                 .then(() => {
                     setTimeout(() => {
                         if (activeConfig.redirect) window.location.href = activeConfig.redirect;
                         else window.close();
                     }, 4000);
                 }, (error) => {
-                    console.error("EmailJS Error:", error);
-                    alert("Submission failed.");
+                    console.error("EmailJS Technical Failure details:", error);
+                    alert("Submission failed. Error response context: " + JSON.stringify(error));
                     document.getElementById('status-overlay').style.display = 'none';
                 });
         }
-
-        init();
     </script>
 </body>
 </html>
